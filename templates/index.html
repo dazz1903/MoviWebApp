@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Users</h1>
+<ul class="user-list">
+    {% for user in users %}
+    <li class="user-entry">
+        <a href="{{ url_for('get_movies', user_id=user.id) }}" class="btn">{{ user.name }}</a>
+    </li>
+    {% else %}
+    <li>No users yet. Add your name to get started.</li>
+    {% endfor %}
+</ul>
+
+<h2>Add a new user</h2>
+{% if error %}<p role="alert">{{ error }}</p>{% endif %}
+<form action="{{ url_for('create_user') }}" method="post">
+    <label for="name">Name</label>
+    <input type="text" id="name" name="name" required maxlength="100" value="{{ request.form.get('name', '') }}">
+    <button type="submit">Add user</button>
+</form>
+{% endblock %}
