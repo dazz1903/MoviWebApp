@@ -8,6 +8,7 @@ from unittest.mock import patch
 from urllib.error import URLError
 
 from sqlalchemy import create_engine
+from sqlalchemy.exc import SQLAlchemyError
 
 from app import app, data_manager, db
 from models import Movie
@@ -46,6 +47,44 @@ class RouteTests(unittest.TestCase):
         self.assertIn(b'Carol', response.data)
         self.assertEqual(self.client.post('/users', data={'name': ' '}).status_code, 400)
         self.assertEqual(self.client.get('/users/999/movies').status_code, 404)
+
+    def test_custom_not_found_page(self):
+        for path in ['/missing-page', '/users/999/movies']:
+            with self.subTest(path=path):
+                response = self.client.get(path)
+                self.assertEqual(response.status_code, 404)
+                self.assertIn(b'404', response.data)
+                self.assertIn(b'Return to the user list', response.data)
+
+    def test_database_read_failure_and_recovery(self):
+        with patch('app.data_manager.get_users', side_effect=SQLAlchemyError('private SQL data')):
+            with patch('app.data_manager.rollback', wraps=data_manager.rollback) as rollback:
+                with self.assertLogs(app.logger, level='ERROR') as logs:
+                    response = self.client.get('/')
+                rollback.assert_called_once_with()
+                self.assertNotIn('private SQL data', '\n'.join(logs.output))
+        self.assertEqual(response.status_code, 500)
+        self.assertIn(b'Something went wrong', response.data)
+        self.assertNotIn(b'private SQL data', response.data)
+        self.assertEqual(self.client.get('/').status_code, 200)
+
+    def test_failed_write_is_rolled_back(self):
+        with patch.object(db.session, 'commit', side_effect=SQLAlchemyError('write failure')):
+            with self.assertLogs(app.logger, level='ERROR'):
+                response = self.client.post('/users', data={'name': 'Unsaved user'})
+        self.assertEqual(response.status_code, 500)
+        self.assertNotIn('Unsaved user', [user.name for user in data_manager.get_users()])
+        self.assertEqual(self.client.post('/users', data={'name': 'Saved user'}).status_code, 302)
+
+    def test_unexpected_exception_uses_custom_server_page(self):
+        # Match Flask's normal non-debug behavior rather than propagating test exceptions.
+        with patch.dict(app.config, {'PROPAGATE_EXCEPTIONS': False}):
+            with patch('app.data_manager.get_users', side_effect=RuntimeError('private details')):
+                with self.assertLogs(app.logger, level='ERROR'):
+                    response = self.client.get('/')
+        self.assertEqual(response.status_code, 500)
+        self.assertIn(b'Something went wrong', response.data)
+        self.assertNotIn(b'private details', response.data)
 
     @patch('app.fetch_movie')
     def test_add_movie_and_redirect(self, lookup):

@@ -1,6 +1,7 @@
 import os
 
 from flask import Flask, abort, flash, redirect, render_template, request, url_for
+from sqlalchemy.exc import SQLAlchemyError
 
 from data_manager import DataManager
 from models import db, Movie
@@ -19,6 +20,24 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
 data_manager = DataManager()
+
+
+@app.errorhandler(404)
+def page_not_found(error):
+    return render_template('404.html'), 404
+
+
+@app.errorhandler(SQLAlchemyError)
+def database_error(error):
+    data_manager.rollback()
+    app.logger.error('Database operation failed (%s).', type(error).__name__)
+    return render_template('500.html'), 500
+
+
+@app.errorhandler(500)
+def internal_server_error(error):
+    data_manager.rollback()
+    return render_template('500.html'), 500
 
 
 @app.route('/')

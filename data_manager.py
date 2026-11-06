@@ -8,6 +8,10 @@ from models import db, User, Movie
 class DataManager:
     """Manage records within an active Flask application context."""
 
+    def rollback(self):
+        """Discard pending changes after a failed database operation."""
+        db.session.rollback()
+
     @staticmethod
     def _validate_name(name, maximum_length):
         if not isinstance(name, str) or not name.strip():

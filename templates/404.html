@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}Page not found · MoviWeb App{% endblock %}
+{% block content %}
+<h1>404 — Page not found</h1>
+<p>The page, user, or movie you requested could not be found.</p>
+<p><a href="{{ url_for('index') }}">Return to the user list</a></p>
+{% endblock %}
