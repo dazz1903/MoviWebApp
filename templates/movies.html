@@ -1,9 +1,34 @@
 {% extends "base.html" %}
 {% block content %}
 <h1>{{ user.name }}'s favorite movies</h1>
-<ul>
+{% if error %}<p role="alert">{{ error }}</p>{% endif %}
+
+<h2>Add a movie</h2>
+<form action="{{ url_for('add_movie', user_id=user.id) }}" method="post">
+    <label for="title">Movie title</label>
+    <input type="text" id="title" name="title" required maxlength="200" value="{{ request.form.get('title', '') }}">
+    <button type="submit">Find and add movie</button>
+</form>
+
+<h2>Favorite movies</h2>
+<ul class="movie-list">
     {% for movie in movies %}
-    <li>{{ movie.name }}</li>
+    <li class="movie-entry">
+        <h3>{{ movie.name }}</h3>
+        {% if movie.poster_url %}
+        <img src="{{ movie.poster_url }}" alt="Poster for {{ movie.name }}" width="150" loading="lazy" onerror="this.hidden=true">
+        {% endif %}
+        <p>Director: {{ movie.director or 'Unknown' }}</p>
+        <p>Year: {{ movie.year or 'Unknown' }}</p>
+        <form action="{{ url_for('update_movie', user_id=user.id, movie_id=movie.id) }}" method="post">
+            <label for="new_title_{{ movie.id }}">Correct movie title</label>
+            <input type="text" id="new_title_{{ movie.id }}" name="new_title" value="{{ movie.name }}" required maxlength="200">
+            <button type="submit">Update movie</button>
+        </form>
+        <form action="{{ url_for('delete_movie', user_id=user.id, movie_id=movie.id) }}" method="post">
+            <button type="submit" aria-label="Delete {{ movie.name }}">Delete movie</button>
+        </form>
+    </li>
     {% else %}
     <li>No favorite movies yet.</li>
     {% endfor %}

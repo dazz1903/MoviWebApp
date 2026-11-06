@@ -36,6 +36,16 @@ class DataManager:
         """Return all users ordered by their IDs."""
         return db.session.scalars(db.select(User).order_by(User.id)).all()
 
+    def get_user(self, user_id):
+        """Return one user, or None if the user does not exist."""
+        return db.session.get(User, user_id)
+
+    def get_movie(self, movie_id, user_id):
+        """Return a movie only when it belongs to the specified user."""
+        return db.session.scalar(
+            db.select(Movie).where(Movie.id == movie_id, Movie.user_id == user_id)
+        )
+
     def get_movies(self, user_id):
         """Return the user's movies, or an empty list when none exist."""
         return db.session.scalars(

@@ -14,6 +14,9 @@
         </nav>
     </header>
     <main class="container">
+        {% for message in get_flashed_messages() %}
+        <p role="status">{{ message }}</p>
+        {% endfor %}
         {% block content %}{% endblock %}
     </main>
 </body>

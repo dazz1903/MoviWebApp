@@ -1,12 +1,14 @@
 import os
 
-from flask import Flask, redirect, render_template, request, url_for
+from flask import Flask, abort, flash, redirect, render_template, request, url_for
 
 from data_manager import DataManager
-from models import db, Movie, User
+from models import db, Movie
+from omdb import OMDbError, fetch_movie
 
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or os.urandom(32)
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 os.makedirs(os.path.join(basedir, 'data'), exist_ok=True)
@@ -33,14 +35,68 @@ def create_user():
         return render_template(
             'index.html', users=data_manager.get_users(), error=str(error)
         ), 400
+    flash('User created successfully!')
     return redirect(url_for('index'))
+
+
+def require_user(user_id):
+    user = data_manager.get_user(user_id)
+    if user is None:
+        abort(404)
+    return user
+
+
+def require_movie(user_id, movie_id):
+    require_user(user_id)
+    movie = data_manager.get_movie(movie_id, user_id)
+    if movie is None:
+        abort(404)
+    return movie
 
 
 @app.route('/users/<int:user_id>/movies', methods=['GET'])
 def get_movies(user_id):
-    user = db.get_or_404(User, user_id)
+    user = require_user(user_id)
     movies = data_manager.get_movies(user_id)
     return render_template('movies.html', user=user, movies=movies)
+
+
+@app.route('/users/<int:user_id>/movies', methods=['POST'])
+def add_movie(user_id):
+    user = require_user(user_id)
+    title = request.form.get('title', '').strip()
+    try:
+        details = fetch_movie(title)
+        data_manager.add_movie(Movie(user_id=user_id, **details))
+    except (OMDbError, ValueError) as error:
+        return render_template(
+            'movies.html', user=user, movies=data_manager.get_movies(user_id),
+            error=str(error)
+        ), error.status_code if isinstance(error, OMDbError) else 400
+    flash('Movie added successfully!')
+    return redirect(url_for('get_movies', user_id=user_id))
+
+
+@app.route('/users/<int:user_id>/movies/<int:movie_id>/update', methods=['POST'])
+def update_movie(user_id, movie_id):
+    require_movie(user_id, movie_id)
+    try:
+        data_manager.update_movie(movie_id, request.form.get('new_title', ''))
+    except ValueError as error:
+        return render_template(
+            'movies.html', user=require_user(user_id),
+            movies=data_manager.get_movies(user_id), error=str(error)
+        ), 400
+    flash('Movie title updated successfully!')
+    return redirect(url_for('get_movies', user_id=user_id))
+
+
+@app.route('/users/<int:user_id>/movies/<int:movie_id>/delete', methods=['POST'])
+def delete_movie(user_id, movie_id):
+    require_movie(user_id, movie_id)
+    data_manager.delete_movie(movie_id)
+    flash('Movie deleted successfully!')
+    return redirect(url_for('get_movies', user_id=user_id))
 
 
 @app.route('/users')
