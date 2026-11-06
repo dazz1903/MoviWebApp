@@ -5,19 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}MoviWeb App{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='logo.svg') }}">
+    <script src="{{ url_for('static', filename='app.js') }}" defer></script>
 </head>
 <body>
     <header>
-        <h1>MoviWeb App</h1>
+        <a class="brand" href="{{ url_for('index') }}" aria-label="MoviWeb App home">
+            <img src="{{ url_for('static', filename='logo.svg') }}" width="36" height="36" alt="">
+            <span>Movi<span class="brand-accent">Web</span><small>Your personal cinema</small></span>
+        </a>
         <nav aria-label="Main navigation">
-            <a href="{{ url_for('index') }}">Home</a>
+            <a href="{{ url_for('index') }}">All users</a>
+            {% if user is defined %}<a class="nav-current" href="{{ url_for('get_movies', user_id=user.id) }}">{{ user.name }}'s collection</a>{% endif %}
         </nav>
     </header>
     <main class="container">
         {% for message in get_flashed_messages() %}
-        <p role="status">{{ message }}</p>
+        <p class="notice success" role="status">{{ message }}</p>
         {% endfor %}
         {% block content %}{% endblock %}
     </main>
+    <footer>Made for the movies you love. <span>Movie information supplied by <a href="https://www.omdbapi.com/">OMDb</a>.</span></footer>
 </body>
 </html>

@@ -1,21 +1,40 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Users</h1>
+<section class="hero">
+    <p class="eyebrow">The best seat is yours</p>
+    <h1>Great movies.<br>Your collection.</h1>
+    <p>Keep the films that stayed with you, all in one place.<br>Choose your profile and make it a movie night.</p>
+    <a class="button" href="#add-user">+ Create your profile</a>
+    <div class="hero-art" aria-hidden="true"><div class="ticket">MOVIWEB<span>ADMIT ONE</span><strong>★</strong><small>YOUR NEXT FAVORITE AWAITS</small></div></div>
+</section>
+<div class="home-layout">
+<section aria-labelledby="users-heading">
+<div class="section-heading"><h2 id="users-heading">Who's watching?</h2><span class="badge">{{ users|length }} profile{% if users|length != 1 %}s{% endif %}</span></div>
 <ul class="user-list">
     {% for user in users %}
     <li class="user-entry">
-        <a href="{{ url_for('get_movies', user_id=user.id) }}" class="btn">{{ user.name }}</a>
+        <a href="{{ url_for('get_movies', user_id=user.id) }}" class="user-card">
+            <span class="avatar" aria-hidden="true">{{ user.name[0]|upper }}</span>
+            <span><strong>{{ user.name }}</strong><small>Open movie collection</small></span>
+            <span class="arrow" aria-hidden="true">↗</span>
+        </a>
     </li>
     {% else %}
-    <li>No users yet. Add your name to get started.</li>
+    <li class="empty-state"><span aria-hidden="true">◎</span><h3>Your story starts here</h3><p>No users yet. Add your name to get started.</p></li>
     {% endfor %}
 </ul>
+</section>
 
-<h2>Add a new user</h2>
-{% if error %}<p role="alert">{{ error }}</p>{% endif %}
-<form action="{{ url_for('create_user') }}" method="post">
+<section class="panel" id="add-user" aria-labelledby="add-user-heading">
+<p class="eyebrow">Make yourself at home</p>
+<h2 id="add-user-heading">A collection of your own.</h2>
+<p class="muted">Start with a name. Fill it with favorites.</p>
+{% if error %}<p class="notice error" role="alert">{{ error }}</p>{% endif %}
+<form action="{{ url_for('create_user') }}" method="post" class="stack-form" data-loading="Creating profile…">
     <label for="name">Name</label>
-    <input type="text" id="name" name="name" required maxlength="100" value="{{ request.form.get('name', '') }}">
-    <button type="submit">Add user</button>
+    <input type="text" id="name" name="name" required maxlength="100" autocomplete="name" placeholder="Your name" value="{{ request.form.get('name', '') }}">
+    <button type="submit">Create profile <span aria-hidden="true">→</span></button>
 </form>
+</section>
+</div>
 {% endblock %}

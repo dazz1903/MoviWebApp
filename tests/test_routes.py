@@ -42,7 +42,7 @@ class RouteTests(unittest.TestCase):
     def test_pages_and_user_creation(self):
         self.assertIn(b'Alice', self.client.get('/').data)
         self.assertIn(b'Inception', self.client.get(self.path).data)
-        self.assertNotIn(b'Inception', self.client.get(f'/users/{self.other.id}/movies').data)
+        self.assertNotIn(b'<h3>Inception</h3>', self.client.get(f'/users/{self.other.id}/movies').data)
         response = self.client.post('/users', data={'name': 'Carol'}, follow_redirects=True)
         self.assertIn(b'Carol', response.data)
         self.assertEqual(self.client.post('/users', data={'name': ' '}).status_code, 400)

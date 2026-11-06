@@ -1,36 +1,49 @@
 {% extends "base.html" %}
+{% block title %}{{ user.name }}'s collection · MoviWeb{% endblock %}
 {% block content %}
+<a class="back-link" href="{{ url_for('index') }}">← Back to users</a>
+<p class="eyebrow">Your very own film archive</p>
 <h1>{{ user.name }}'s favorite movies</h1>
-{% if error %}<p role="alert">{{ error }}</p>{% endif %}
+<p class="muted">The classics, the surprises, the ones you'll watch again.</p>
+{% if error %}<p class="notice error" role="alert">{{ error }}</p>{% endif %}
 
+<section class="add-movie panel">
 <h2>Add a movie</h2>
-<form action="{{ url_for('add_movie', user_id=user.id) }}" method="post">
+<form action="{{ url_for('add_movie', user_id=user.id) }}" method="post" class="search-form" data-loading="Finding your movie…">
     <label for="title">Movie title</label>
-    <input type="text" id="title" name="title" required maxlength="200" value="{{ request.form.get('title', '') }}">
+    <input type="text" id="title" name="title" required maxlength="200" placeholder="Try Inception or your all-time favorite" value="{{ request.form.get('title', '') }}">
     <button type="submit">Find and add movie</button>
 </form>
+</section>
 
-<h2>Favorite movies</h2>
+<div class="section-heading"><h2>On your screen</h2><span class="badge">{{ movies|length }} movie{% if movies|length != 1 %}s{% endif %}</span></div>
 <ul class="movie-list">
     {% for movie in movies %}
     <li class="movie-entry">
-        <h3>{{ movie.name }}</h3>
+        <div class="poster">
+        <div class="poster-placeholder" aria-hidden="true">▶<span>Poster unavailable</span></div>
         {% if movie.poster_url %}
-        <img src="{{ movie.poster_url }}" alt="Poster for {{ movie.name }}" width="150" loading="lazy" onerror="this.hidden=true">
+        <img src="{{ movie.poster_url }}" alt="Poster for {{ movie.name }}" loading="lazy" onerror="this.hidden=true">
         {% endif %}
-        <p>Director: {{ movie.director or 'Unknown' }}</p>
-        <p>Year: {{ movie.year or 'Unknown' }}</p>
-        <form action="{{ url_for('update_movie', user_id=user.id, movie_id=movie.id) }}" method="post">
+        <span class="year-badge">{{ movie.year or 'Year unknown' }}</span>
+        </div>
+        <div class="movie-body">
+        <h3>{{ movie.name }}</h3>
+        <p class="muted">Directed by {{ movie.director or 'Unknown' }}</p>
+        <details class="edit-movie"><summary>Edit title</summary>
+        <form action="{{ url_for('update_movie', user_id=user.id, movie_id=movie.id) }}" method="post" class="stack-form" data-loading="Saving…">
             <label for="new_title_{{ movie.id }}">Correct movie title</label>
             <input type="text" id="new_title_{{ movie.id }}" name="new_title" value="{{ movie.name }}" required maxlength="200">
             <button type="submit">Update movie</button>
         </form>
+        </details>
         <form action="{{ url_for('delete_movie', user_id=user.id, movie_id=movie.id) }}" method="post">
-            <button type="submit" aria-label="Delete {{ movie.name }}">Delete movie</button>
+            <button class="danger" type="submit" aria-label="Delete {{ movie.name }}">Remove from favorites</button>
         </form>
+        </div>
     </li>
     {% else %}
-    <li>No favorite movies yet.</li>
+    <li class="empty-state"><span aria-hidden="true">▷</span><h3>Every collection starts with one.</h3><p>No favorite movies yet. Find your first movie above.</p></li>
     {% endfor %}
 </ul>
 {% endblock %}
